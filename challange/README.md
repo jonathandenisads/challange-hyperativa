@@ -71,7 +71,7 @@ Note: This `.env` file should never be committed to version control.
 
 ### **1. Clone the repository**
 ```bash
-git clone https://github.com/your/repo.git
+git https://github.com/jonathandenisads/challange-hyperativa.git
 cd repo
 ```
 
