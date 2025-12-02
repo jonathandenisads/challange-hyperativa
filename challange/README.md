@@ -182,6 +182,9 @@ Response:
 }
 ```
 >Without a valid token, requests return 401 Unauthorized or 403 Forbidden.
+> 
+> 🛡️ Note:
+Although this endpoint performs a lookup, it uses POST instead of GET to avoid exposing sensitive card numbers in URLs, logs, browser history, and monitoring tools.
 
 ---
 
