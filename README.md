@@ -92,6 +92,23 @@ mvn spring-boot:run
  Default port: 8081
 ```
 ---
+## ⚙️ API Collection (Postman / Insomnia)
+To make testing easier, the project includes a JSON file containing all endpoints
+(JWT login, card insertion, file upload, validation, etc.).
+
+You can import the file into **Postman** or **Insomnia**:
+
+   - **Insomnia_2025-12-02.json**
+
+### **This collection includes:**
+   - **All routes already configured:** 
+   - **Required headers:** 
+   - **Bearer Token authentication** 
+   - **Example request bodies** 
+   - **File upload example**
+
+
+     📌 Located in: `/src/resources/templates/Insomnia_2025-12-02.json`
 
 ## 📘 Endpoints
 
@@ -182,6 +199,9 @@ Response:
 }
 ```
 >Without a valid token, requests return 401 Unauthorized or 403 Forbidden.
+> 
+> 🛡️ Note:
+Although this endpoint performs a lookup, it uses POST instead of GET to avoid exposing sensitive card numbers in URLs, logs, browser history, and monitoring tools.
 
 ---
 
