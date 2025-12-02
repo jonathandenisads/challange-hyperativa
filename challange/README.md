@@ -42,7 +42,7 @@ src/main/java/br.com.hyperativa
 - Spring Security (minimal)
 - HMAC-SHA256 (Java Crypto)
 - Redis
-- MySql / H2
+- MySql
 
 ---
 
@@ -63,7 +63,7 @@ Create a .env file in the root of the project with the following variables:
 | `KEY_LOOKUP`  | _lookup_key_here                                                          |
 | `KEY_ENC`     | your_encryption_key_here                                                  |
 
-Note: This `.env` file should never be committed to version control.
+> **Important:**  This `.env` file should never be committed to version control.
 
 ---
 
@@ -71,28 +71,59 @@ Note: This `.env` file should never be committed to version control.
 
 ### **1. Clone the repository**
 ```bash
-git clone https://github.com/your/repo.git
-cd repo
+git https://github.com/jonathandenisads/challange-hyperativa.git
+cd challange-hyperativa
 ```
+## ⚙️ Setup Database
+Before running the project, you need to create the database.
+
+2. Create a MySQL database with the following credentials:
+
+    - **Database Name:** `challangetest`
+    - **Username:** `root`
+    - **Password:** `root`
+
 
 ### **2. Run with Maven**
 ```bash
 mvn spring-boot:run
 ```
-
-Default port: **8081**
-
+```
+ Default port: 8081
+```
 ---
+## ⚙️ API Collection (Postman / Insomnia)
+To make testing easier, the project includes a JSON file containing all endpoints
+(JWT login, card insertion, file upload, validation, etc.).
+
+You can import the file into **Postman** or **Insomnia**:
+
+   - **Insomnia_2025-12-02.json**
+
+### **This collection includes:**
+   - **All routes already configured:** 
+   - **Required headers:** 
+   - **Bearer Token authentication** 
+   - **Example request bodies** 
+   - **File upload example**
+
+
+     📌 Located in: `/src/resources/templates/Insomnia_2025-12-02.json`
 
 ## 📘 Endpoints
 
-### **Tokenize Card**
-`POST /api/tokenize`
+### **Authenticator JWT Login**
+1. Call the login endpoint:
+
+`POST /auth/login`
+
+`Content-Type: application/json`
 
 Body:
 ```json
 {
-  "cardNumber": "4111111111111111"
+  "username": "admin",
+  "password": "password"
 }
 ```
 
@@ -102,37 +133,80 @@ Response:
   "hash": "a94c...f02"
 }
 ```
+>Note: This token must be included in the Authorization header for all protected endpoints:
+Authorization: Bearer <JWT_TOKEN_HERE>
+---
+
+### **Insert Manual Card**
+`POST /cards` - Insert a manual Card (requires JWT token)
+
+`Content-Type: application/json`
+
+`Authorization: Bearer <JWT_TOKEN_HERE>`
+
+Body:
+```json
+{
+  "cardNumber": "4456897000000014"
+}
+```
+Response:
+```json
+{
+  "id": "9607a653-4e4d-4fe1-b2dd-4900470245fe"
+}
+```
+>Without a valid token, requests return 401 Unauthorized or 403 Forbidden.
+---
+ ### **Upload Card File**
+`POST /cards` -  Upload a card file (requires JWT token)
+
+`Content-Type: multipart/form-data`
+
+`Form-Data Key: file`
+
+`Form-Data Value: .txt file`
+
+
+Response:
+```json
+{
+  "rejected": 8,
+  "inserted": 1000
+}
+```
+>Without a valid token, requests return 401 Unauthorized or 403 Forbidden.
 
 ---
 
 ### **Check if Card Exists**
-`GET /api/card/{hash}`
+`POST /cards/exists`- Check if Card Exists (requires JWT token)
+`Authorization: Bearer <JWT_TOKEN_HERE>`
 
+`Content-Type: multipart/form-data`
+
+Body:
+```json
+{
+  "cardNumber": "445689799999999656"
+}
+```
 Response:
 ```json
 {
   "exists": true,
-  "id": "uuid-here"
+  "id": "9607a653-4e4d-4fe1-b2dd-4900470245fe"
 }
 ```
-
----
-
-### **Retrieve Card ID**
-`GET /api/card/id/{hash}`
-
-Response:
-```json
-{
-  "id": "uuid-here"
-}
-```
+>Without a valid token, requests return 401 Unauthorized or 403 Forbidden.
+> 
+> 🛡️ Note:
+Although this endpoint performs a lookup, it uses POST instead of GET to avoid exposing sensitive card numbers in URLs, logs, browser history, and monitoring tools.
 
 ---
 
 ## 🧪 Tests
 
-H2 is used for in-memory tests.  
 Run:
 
 ```bash
@@ -157,7 +231,7 @@ sudo apt update
 sudo apt install redis-server
 redis-server
 ```
-
+>Redis is used for caching card validations to improve performance.
 ---
 
 ## 📄 License

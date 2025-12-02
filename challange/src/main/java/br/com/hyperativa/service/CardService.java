@@ -30,6 +30,17 @@ public class CardService {
 
     private static final Logger log = LoggerFactory.getLogger(CardService.class);
 
+    public Card populateObject(String cards, String hash, String enc, String source){
+        Card card = new Card();
+        card.setId(UUID.randomUUID().toString());
+        card.setCardHash(hash);
+        card.setCardEnc(enc);
+        card.setLast4(cards.substring(cards.length() - 4));
+        card.setSource(source);
+        card.setCreatedAt(LocalDateTime.now());
+        return card;
+    }
+
     public String storeCard(String cardNumber, String source) {
         String hash = hmac.hmacSha256(cardNumber);
         if (repository.existsByCardHash(hash)) {
@@ -37,14 +48,7 @@ public class CardService {
         }
         String enc = aes.encrypt(cardNumber);
 
-        Card card = new Card();
-        card.setId(UUID.randomUUID().toString());
-        card.setCardHash(hash);
-        card.setCardEnc(enc);
-        card.setLast4(cardNumber.substring(cardNumber.length() - 4));
-        card.setSource(source);
-        card.setCreatedAt(LocalDateTime.now());
-
+        var card = populateObject(cardNumber, hash, enc, source);
         repository.save(card);
         return card.getId();
     }
@@ -54,29 +58,17 @@ public class CardService {
 
         int batchSize = 5000;
         List<Card> batch = new ArrayList<>();
-        //List<String> rejected = new ArrayList<>();
         int inserted = 0;
 
         for (String c : cards) {
             try {
                 String hash = hmac.hmacSha256(c);
                 String redisKey = "card:" + hash;
-
                 boolean existsInCache = Boolean.TRUE.equals(redisTemplate.hasKey(redisKey));
-
                 if (!existsInCache) {
-
                     if (!repository.existsByCardHash(hash)) {
                         String enc = aes.encrypt(c);
-
-                        Card card = new Card();
-                        card.setId(UUID.randomUUID().toString());
-                        card.setCardHash(hash);
-                        card.setCardEnc(enc);
-                        card.setLast4(c.substring(c.length() - 4));
-                        card.setSource(source);
-                        card.setCreatedAt(LocalDateTime.now());
-
+                        var card = populateObject(c, hash, enc, source);
                         batch.add(card);
                         redisTemplate.opsForValue().set(redisKey, "true");
                     } else {
@@ -85,11 +77,13 @@ public class CardService {
                 }else {
                     log.debug("Cartão já existente em cache | ****{}", c.substring(c.length() - 4));
                 }
+
             } catch (Exception e) {
                 String masked = (c != null && c.length() > 4) ? c.substring(c.length() - 4) : "XXXX";
                 log.warn("Falha ao processar cartão | valorMasked=****{} | erro={}", masked, e.getMessage());
                 //rejected.add(c + ":" + e.getMessage());
             }
+
             if (batch.size() >= batchSize) {
                 repository.saveAll(batch);
                 log.info("Lote gravado no banco | quantidade={} | origem={}", batch.size(), source);
@@ -97,13 +91,13 @@ public class CardService {
                 batch.clear();
             }
         }
+
         if (!batch.isEmpty()) {
             repository.saveAll(batch);
             inserted += batch.size();
         }
         log.info("Processamento finalizado | totalInserido={} | totalRejeitado={} | origem={}",
                 inserted, rejected.size(), source);
-
         return Map.of("inserted", inserted, "rejected", rejected);
     }
 
