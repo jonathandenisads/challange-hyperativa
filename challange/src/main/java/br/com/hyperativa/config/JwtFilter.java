@@ -1,5 +1,6 @@
 package br.com.hyperativa.config;
 
+import br.com.hyperativa.exception.CustomAuthenticationEntryPoint;
 import br.com.hyperativa.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,16 +31,26 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+        if ("/auth/login".equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
+            customAuthenticationEntryPoint.commence(request, response,
+                    new AuthenticationException("Token is missing") {});
             return;
         }
 
@@ -53,7 +65,10 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
 
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            SecurityContextHolder.clearContext();
+
+            customAuthenticationEntryPoint.commence(request, response,
+                    new org.springframework.security.core.AuthenticationException("Token is invalid") {});
             return;
         }
 

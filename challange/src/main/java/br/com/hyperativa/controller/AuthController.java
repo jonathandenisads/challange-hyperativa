@@ -1,5 +1,6 @@
 package br.com.hyperativa.controller;
 
+import br.com.hyperativa.exception.InvalidCredentialsException;
 import br.com.hyperativa.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,13 +26,12 @@ public class AuthController {
         String user = body.get("username");
         String pass = body.get("password");
 
-        // (exemplo simples — substitua pelo AuthManager real se quiser)
         if ("admin".equals(user) && "password".equals(pass)) {
             String token = jwtService.generateToken(user);
             return ResponseEntity.ok(Map.of("access_token", token));
         }
 
-        return ResponseEntity.status(401).body(Map.of("error", "invalid_credentials"));
+        throw new InvalidCredentialsException("Invalid username or password.");
     }
 
 }
